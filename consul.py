@@ -91,6 +91,11 @@ options:
         elements: str
         description:
           - tags that will be attached to the service registration.
+    meta:
+        type: list
+        elements: str
+        description:
+          - meta that will be attached to the service registration.
     script:
         type: str
         description:
@@ -334,7 +339,8 @@ def add_service(module, service):
                      service_name=result.name,
                      service_port=result.port,
                      checks=[check.to_dict() for check in service.checks],
-                     tags=result.tags)
+                     tags=result.tags,
+                     meta=result.meta)
 
 
 def remove_service(module, service_id):
@@ -396,6 +402,7 @@ def parse_service(module):
             module.params.get('service_address'),
             module.params.get('service_port'),
             module.params.get('tags'),
+            module.params.get('meta'),
         )
     elif not module.params.get('service_name'):
         module.fail_json(msg="service_name is required to configure a service.")
@@ -404,19 +411,21 @@ def parse_service(module):
 class ConsulService(object):
 
     def __init__(self, service_id=None, name=None, address=None, port=-1,
-                 tags=None, loaded=None):
+                 tags=None, meta=None, loaded=None):
         self.id = self.name = name
         if service_id:
             self.id = service_id
         self.address = address
         self.port = port
         self.tags = tags
+        self.meta = meta
         self.checks = []
         if loaded:
             self.id = loaded['ID']
             self.name = loaded['Service']
             self.port = loaded['Port']
             self.tags = loaded['Tags']
+            self.meta = loaded['Meta']
 
     def register(self, consul_api):
         optional = {}
@@ -448,7 +457,8 @@ class ConsulService(object):
                 self.id == other.id and
                 self.name == other.name and
                 self.port == other.port and
-                self.tags == other.tags)
+                self.tags == other.tags and
+                self.meta == other.meta)
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -459,6 +469,8 @@ class ConsulService(object):
             data['port'] = self.port
         if self.tags and len(self.tags) > 0:
             data['tags'] = self.tags
+        if self.meta and len(self.meta) > 0:
+            data['meta'] = self.meta
         if len(self.checks) > 0:
             data['check'] = self.checks[0].to_dict()
         return data
@@ -586,6 +598,7 @@ def main():
             http=dict(type='str'),
             timeout=dict(type='str'),
             tags=dict(type='list', elements='str'),
+            meta=dict(type='list', elements='str'),
             token=dict(no_log=True)
         ),
         supports_check_mode=False,
