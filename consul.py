@@ -441,6 +441,7 @@ class ConsulService(object):
             service_id=self.id,
             address=self.address,
             tags=self.tags,
+            meta=self.meta,
             **optional)
 
     def add_check(self, check):
@@ -598,7 +599,7 @@ def main():
             http=dict(type='str'),
             timeout=dict(type='str'),
             tags=dict(type='list', elements='str'),
-            meta=dict(type='list', elements='str'),
+            meta=dict(type='dict', default={}),
             token=dict(no_log=True)
         ),
         supports_check_mode=False,
